@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    buildFeatures.viewBinding = true
+    buildFeatures { viewBinding = true }
     namespace 'com.example.localpsych'
     compileSdk 33
 

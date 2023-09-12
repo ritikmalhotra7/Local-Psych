@@ -1,13 +1,16 @@
 package com.example.localpsych
 
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
 import android.net.wifi.p2p.WifiP2pDevice
-import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.localpsych.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -23,10 +26,13 @@ class MainActivity : AppCompatActivity() {
     private val binding by lazy{
         _binding!!
     }
+    private lateinit var peerAdapter:PeerAdapter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        setupPermissions()
 
         // Indicates a change in the Wi-Fi Direct status.
         mIntentFilter.addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
@@ -42,12 +48,19 @@ class MainActivity : AppCompatActivity() {
 
         mManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
         mChannel = mManager.initialize(this, mainLooper, null)
-        setViews()
+
+
 
     }
 
+    @SuppressLint("MissingPermission")
     private fun setViews() {
+        peerAdapter = PeerAdapter()
         binding.apply {
+            activityMainRvPeers.apply {
+                adapter = peerAdapter
+                layoutManager = LinearLayoutManager(this@MainActivity)
+            }
             activityMainBtDiscover.setOnClickListener {
                 mManager.discoverPeers(mChannel,object:WifiP2pManager.ActionListener{
                     override fun onSuccess() {
@@ -55,6 +68,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     override fun onFailure(p0: Int) {
+                        Log.d("taget",p0.toString())
                         binding.activityMainTvStatus.text = "Discovery Failed"
                     }
                 })
@@ -62,12 +76,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val peerListener = WifiP2pManager.PeerListListener { peerList ->
+    private fun setupPermissions() {
+        val foregroundPermLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            when {
+                permissions.getOrDefault(android.Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
+                    Log.d("taget", "fine-location")
+                    setViews()
+
+                }
+
+                permissions.getOrDefault(android.Manifest.permission.NEARBY_WIFI_DEVICES, false) -> {
+                    Log.d("taget", "nearby devices")
+                }
+
+                else -> {
+                    Log.d("taget", "no permissions")
+
+                }
+            }
+        }
+        foregroundPermLauncher.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,android.Manifest.permission.NEARBY_WIFI_DEVICES,android.Manifest.permission.ACCESS_WIFI_STATE,android.Manifest.permission.CHANGE_WIFI_STATE,))
+    }
+
+    val peerListener = WifiP2pManager.PeerListListener { peerList ->
         if(!peerList.deviceList.equals(peers)){
             peers.clear()
             peers.addAll(peerList.deviceList)
             deviceNameArray = peerList.deviceList.map { it.deviceName }.toTypedArray()
             deviceArray = peerList.deviceList.toTypedArray()
+
+            peerAdapter.setList(deviceNameArray.toList())
         }
     }
 

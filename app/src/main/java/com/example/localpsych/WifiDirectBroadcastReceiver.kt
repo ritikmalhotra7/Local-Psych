@@ -1,14 +1,17 @@
 package com.example.localpsych
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.net.wifi.p2p.WifiP2pManager
+import android.util.Log
 import android.widget.Toast
 
 class WifiDirectBroadcastReceiver(private val mManager:WifiP2pManager,private val mChannel:WifiP2pManager.Channel,private val mActivity:Activity):BroadcastReceiver(){
 
+    @SuppressLint("MissingPermission")
     override fun onReceive(context: Context?, intent: Intent) {
         when(intent.action) {
             WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION -> {
@@ -22,6 +25,8 @@ class WifiDirectBroadcastReceiver(private val mManager:WifiP2pManager,private va
 
                 // The peer list has changed! We should probably do something about
                 // that.
+                Log.d("taget","peers changed")
+                mManager.requestPeers(mChannel,(mActivity as MainActivity).peerListener)
 
             }
             WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
