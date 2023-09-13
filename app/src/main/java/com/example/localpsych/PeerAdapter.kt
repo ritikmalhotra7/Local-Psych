@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.localpsych.databinding.PeerItemBinding
 
 class PeerAdapter: RecyclerView.Adapter<PeerAdapter.ViewHolder>() {
+    private var clickListener:((String,Int)->Unit)? = null
     private val callback = object:DiffUtil.ItemCallback<String>(){
         override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
             return oldItem === newItem
@@ -23,6 +24,11 @@ class PeerAdapter: RecyclerView.Adapter<PeerAdapter.ViewHolder>() {
             binding.apply {
                 item.apply {
                     peerItemTvName.text = item
+                    root.setOnClickListener {
+                        clickListener?.let{
+                            it(item,position)
+                        }
+                    }
                 }
             }
         }
@@ -30,6 +36,10 @@ class PeerAdapter: RecyclerView.Adapter<PeerAdapter.ViewHolder>() {
 
     fun setList(list:List<String>){
         differ.submitList(list)
+    }
+
+    fun setClickListener(listener:(String,Int)->Unit){
+        clickListener = listener
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =

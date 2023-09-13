@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
+import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pDevice
+import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -107,7 +109,34 @@ class MainActivity : AppCompatActivity() {
             deviceNameArray = peerList.deviceList.map { it.deviceName }.toTypedArray()
             deviceArray = peerList.deviceList.toTypedArray()
 
-            peerAdapter.setList(deviceNameArray.toList())
+            peerAdapter.apply{
+                setList(deviceNameArray.toList())
+                setClickListener{ item, position ->
+                    val deviceInfo = deviceArray.get(position)
+                    val config = WifiP2pConfig()
+                    config.deviceAddress = deviceInfo.deviceAddress
+                    mManager.connect(mChannel,config,object:WifiP2pManager.ActionListener{
+                        override fun onSuccess() {
+                            binding.activityMainTvStatus.text = "Connection Success"
+                        }
+
+                        override fun onFailure(p0: Int) {
+                            binding.activityMainTvStatus.text = "Connection Failed"
+                        }
+                    })
+                }
+            }
+        }
+    }
+
+    val connectInfoListener = object:WifiP2pManager.ConnectionInfoListener{
+        override fun onConnectionInfoAvailable(wifiP2pInfo: WifiP2pInfo?) {
+            val groupOwnerAddress = wifiP2pInfo!!.groupOwnerAddress
+            if(wifiP2pInfo.groupFormed && wifiP2pInfo.isGroupOwner){
+                binding.activityMainTvStatus.text = "You are the Host"
+            }else{
+                binding.activityMainTvStatus.text = "You are the Client"
+            }
         }
     }
 

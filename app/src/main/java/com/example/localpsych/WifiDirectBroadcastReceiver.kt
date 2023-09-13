@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.net.NetworkInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.util.Log
 import android.widget.Toast
@@ -34,6 +35,12 @@ class WifiDirectBroadcastReceiver(private val mManager:WifiP2pManager,private va
                 // Connection state changed! We should probably do something about
                 // that.
 
+                val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiP2pManager.EXTRA_NETWORK_INFO)
+                networkInfo?.let{
+                    if(networkInfo.isConnected){
+                        mManager.requestConnectionInfo(mChannel,(mActivity as MainActivity).connectInfoListener)
+                    }
+                }
             }
             WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
                 /*(this.supportFragmentManager.findFragmentById(R.id.frag_list) as DeviceListFragment)
