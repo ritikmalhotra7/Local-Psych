@@ -82,7 +82,6 @@ class MainActivity : AppCompatActivity() {
                 mManager.discoverPeers(mChannel,object:WifiP2pManager.ActionListener{
                     override fun onSuccess() {
                         binding.activityMainTvStatus.text = "Discovery Started"
-                        mManager.createGroup()
                     }
 
                     override fun onFailure(p0: Int) {
