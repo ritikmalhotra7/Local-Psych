@@ -14,21 +14,31 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.localpsych.databinding.ActivityMainBinding
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
 
 class MainActivity : AppCompatActivity() {
     private lateinit var mReceiver: BroadcastReceiver
     private val mIntentFilter = IntentFilter()
+
     private lateinit var mChannel: WifiP2pManager.Channel
     private lateinit var mManager: WifiP2pManager
+
     private var peers = arrayListOf<WifiP2pDevice>()
     private var deviceNameArray = arrayOf<String>()
     private var deviceArray = arrayOf<WifiP2pDevice>()
+
+    private lateinit var socket: Socket
+    private lateinit var serverSocket: ServerSocket
 
     private var _binding:ActivityMainBinding? = null
     private val binding by lazy{
         _binding!!
     }
     private lateinit var peerAdapter:PeerAdapter
+    private lateinit var connectedGroupAdapter:PeerAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
@@ -58,15 +68,21 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun setViews() {
         peerAdapter = PeerAdapter()
+        connectedGroupAdapter = PeerAdapter()
         binding.apply {
             activityMainRvPeers.apply {
                 adapter = peerAdapter
+                layoutManager = LinearLayoutManager(this@MainActivity)
+            }
+            activityMainRvConnectedPeers.apply {
+                adapter = connectedGroupAdapter
                 layoutManager = LinearLayoutManager(this@MainActivity)
             }
             activityMainBtDiscover.setOnClickListener {
                 mManager.discoverPeers(mChannel,object:WifiP2pManager.ActionListener{
                     override fun onSuccess() {
                         binding.activityMainTvStatus.text = "Discovery Started"
+                        mManager.createGroup()
                     }
 
                     override fun onFailure(p0: Int) {
@@ -133,9 +149,21 @@ class MainActivity : AppCompatActivity() {
         override fun onConnectionInfoAvailable(wifiP2pInfo: WifiP2pInfo?) {
             val groupOwnerAddress = wifiP2pInfo!!.groupOwnerAddress
             if(wifiP2pInfo.groupFormed && wifiP2pInfo.isGroupOwner){
-                binding.activityMainTvStatus.text = "You are the Host"
+
+                try{
+                    serverSocket = ServerSocket(8888);
+                    socket = serverSocket.accept()
+                    binding.activityMainTvStatus.text = "You are the Host"
+                }catch(e:Exception){
+                    e.printStackTrace()
+                }
             }else{
-                binding.activityMainTvStatus.text = "You are the Client"
+                try{
+                    socket.connect(InetSocketAddress(groupOwnerAddress.hostAddress,8888),500)
+                    binding.activityMainTvStatus.text = "You are the Client"
+                }catch(e:Exception){
+                    e.printStackTrace()
+                }
             }
         }
     }
