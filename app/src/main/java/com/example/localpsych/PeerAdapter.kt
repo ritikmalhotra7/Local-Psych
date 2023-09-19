@@ -37,6 +37,7 @@ class PeerAdapter: RecyclerView.Adapter<PeerAdapter.ViewHolder>() {
     fun setList(list:List<String>){
         differ.submitList(list)
     }
+    fun getList() = differ.currentList
 
     fun setClickListener(listener:(String,Int)->Unit){
         clickListener = listener
