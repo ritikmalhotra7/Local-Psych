@@ -19,9 +19,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.localpsych.databinding.FragmentClientBinding
 import com.example.localpsych.databinding.FragmentHomeBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.InetSocketAddress
+import java.net.ServerSocket
+import java.net.Socket
 
 
 class ClientFragment : Fragment() {
@@ -40,7 +50,14 @@ class ClientFragment : Fragment() {
         (requireActivity() as MainActivity).askPerms()
     }
     private lateinit var peerAdapter: PeerAdapter
+
     private var peers: ArrayList<WifiP2pDevice> = arrayListOf()
+    private lateinit var socket: Socket
+
+    private lateinit var hostAdd:String
+
+    private lateinit var inputStream: InputStream
+    private lateinit var outputStream: OutputStream
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -90,6 +107,12 @@ class ClientFragment : Fragment() {
             })
         }
     }
+
+    private fun sendData(){
+        inputStream = socket.getInputStream()
+        outputStream = socket.getOutputStream()
+
+    }
     @SuppressLint("MissingPermission")
     val peerListener = WifiP2pManager.PeerListListener { peerList ->
         var deviceNameArray = arrayOf<String>()
@@ -122,6 +145,29 @@ class ClientFragment : Fragment() {
             }
         }
     }
+    private val connectInfoListener = WifiP2pManager.ConnectionInfoListener { wifiP2pInfo ->
+        val groupOwnerAddress = wifiP2pInfo!!.groupOwnerAddress
+        hostAdd = groupOwnerAddress.hostAddress!!.toString()
+        socket = Socket()
+        if (wifiP2pInfo.groupFormed && !wifiP2pInfo.isGroupOwner) {
+            binding.fragmentClientTvStatus.text = "You are the Client"
+            try {
+                lifecycleScope.launch {
+                    withContext(Dispatchers.IO) {
+                        socket = Socket()
+                        SocketHandler.socket = socket
+                        socket.connect(InetSocketAddress(hostAdd,8888),500)
+                        inputStream = socket.getInputStream()
+                        outputStream = socket.getOutputStream()
+                    }
+                    findNavController().navigate(R.id.action_clientFragment_to_questionFragment)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
     private val wifiDirectBroadcastReceiver = object : BroadcastReceiver() {
         @SuppressLint("MissingPermission")
         override fun onReceive(p0: Context?, intent: Intent) {
@@ -138,6 +184,12 @@ class ClientFragment : Fragment() {
                 }
 
                 WifiP2pManager.WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
+                    val networkInfo = intent.getParcelableExtra<NetworkInfo>(WifiP2pManager.EXTRA_NETWORK_INFO)
+                    networkInfo?.let{
+                        if(it.isConnected){
+                            mManager.requestConnectionInfo(mChannel,connectInfoListener)
+                        }
+                    }
                 }
 
                 WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {

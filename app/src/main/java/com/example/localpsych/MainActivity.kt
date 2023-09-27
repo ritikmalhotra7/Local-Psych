@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
         _binding!!
     }
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         _binding = ActivityMainBinding.inflate(layoutInflater)
@@ -38,8 +39,6 @@ class MainActivity : AppCompatActivity() {
 
         mManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
         mChannel = mManager.initialize(this, mainLooper, null)
-
-
 
     }
 
